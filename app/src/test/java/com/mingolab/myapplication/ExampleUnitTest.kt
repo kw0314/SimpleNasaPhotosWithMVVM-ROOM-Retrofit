@@ -1,4 +1,4 @@
-package com.mingolab.simplemvvm
+package com.mingolab.myapplication
 
 import org.junit.Test
 

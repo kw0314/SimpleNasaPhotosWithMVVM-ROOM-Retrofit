@@ -1,4 +1,4 @@
-package com.mingolab.simplemvvm.ui.theme
+package com.mingolab.myapplication.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
