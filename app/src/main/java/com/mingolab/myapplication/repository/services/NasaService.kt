@@ -1,11 +1,13 @@
 package com.mingolab.myapplication.repository.services
 
 import android.content.ContentValues
+import android.content.ContentValues.TAG
 import android.util.Log
 import com.mingolab.myapplication.repository.localDB.DayPhoto
 import com.mingolab.myapplication.repository.localDB.DayPhotoDao
 import com.mingolab.myapplication.repository.remoteDB.JsonNasaApi
 import com.mingolab.myapplication.repository.remoteDB.NasaConfig
+import com.mingolab.myapplication.util.Utils
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,11 +19,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDate
 import java.time.ZoneId
 
+
 class NasaService {
 
     val TIME_ZONE = "PST"
     var nasaConfig: NasaConfig = NasaConfig()
-    var API: JsonNasaApi?=null
+    private var API: JsonNasaApi?= null
 
     val coroutineExceptionHandler = CoroutineExceptionHandler{_, throwable ->
         throwable.printStackTrace()
@@ -47,84 +50,43 @@ class NasaService {
         return API
     }
 
-    public fun getTodayPhoto(db: DayPhotoDao) {
-        var api = getApi()
-
-        var today:String = LocalDate.now(ZoneId.of(TIME_ZONE)).toString()
-        nasaConfig.setEndDate(today)
-        Log.d(ContentValues.TAG, today)
-
-        if (api != null) {
-            try {
-
-                CoroutineScope(Dispatchers.IO+coroutineExceptionHandler).launch {
-                    var photo =
-                        api.getAPOD(
-                            nasaConfig.getEndDate(),
-                            nasaConfig.getHd(),
-                            nasaConfig.getApiKey()
-                        )
-                    Log.d(ContentValues.TAG, photo.explanation)
-
-                    // need to check before sending a query
-
-                }
-            } catch (e: Exception) {
-                Log.e(ContentValues.TAG, "${e.message}")
-            }
+    public fun initializedPhoto(db:DayPhotoDao) {
+        var endDate = nasaConfig.getToday()
+        var startDate = Utils().toDate(endDate).minusDays(7).toString()
+        nasaConfig.setUpToDate(endDate)
+        getPhotos(db, startDate, endDate)
+    }
+    public fun getLatestPhotos(db:DayPhotoDao, upToDateInDB: String) {
+        var startDate = upToDateInDB
+        var endDate = nasaConfig.getToday()
+        if (startDate<endDate){
+            nasaConfig.setUpToDate(endDate)
+            getPhotos(db, startDate, endDate)
+        } else {
+            Log.d(TAG, "The DB is up-to date!! No update now.")
         }
+
     }
 
-    public fun getDayPhoto(db: DayPhotoDao, date:String){
 
-        var api = getApi()
-
-        if (api != null) {
-            try {
-
-                CoroutineScope(Dispatchers.IO+coroutineExceptionHandler).launch {
-                    var photo =
-                        api.getAPOD(
-                            date,
-                            nasaConfig.getHd(),
-                            nasaConfig.getApiKey()
-                        )
-                    Log.d(ContentValues.TAG, photo.explanation)
-
-                    // to avoid duplicated insert
-                    var count: Int = db.getPhotoOfThatDay(photo.date)
-                    if (count == 0) db.insert(photo)
-
-                }
-            } catch (e: Exception) {
-                Log.e(ContentValues.TAG, "${e.message}")
-            }
-        }
+    public fun getOldPhotos(db:DayPhotoDao, oldDateInDB: String) {
+        var startDate = Utils().toDate(oldDateInDB).minusDays(7).toString()
+        var endDate = oldDateInDB
+        nasaConfig.setOldDate(startDate)
+        getPhotos(db, startDate, endDate)
     }
 
-    public fun getTodayPhotos(db:DayPhotoDao) {
-
+    private fun getPhotos(db:DayPhotoDao, start: String, end: String){
         var api = getApi()
-
-
         if (api != null) {
-
-            var today=nasaConfig.getEndDate()
-
-            if (today!=LocalDate.now(ZoneId.of(TIME_ZONE)).toString()){
-                nasaConfig.setStartDate(today)
-                nasaConfig.setEndDate(LocalDate.now(ZoneId.of(TIME_ZONE)).toString())
-            }
-//            nasaConfig.setStartDate(LocalDate.now(ZoneId.of(TIME_ZONE)).minusDays(7).toString())
-
-            Log.d(ContentValues.TAG, nasaConfig.getEndDate())
+            Log.d(TAG, "Get photos: $start - $end")
 
             try {
-                CoroutineScope(Dispatchers.IO).launch {
+                CoroutineScope(Dispatchers.IO+coroutineExceptionHandler).launch {
                     val photos: List<DayPhoto> =
                         api.getAPODS(
-                            nasaConfig.getStartDate(),
-                            nasaConfig.getEndDate(),
+                            start,
+                            end,
                             nasaConfig.getHd(),
                             nasaConfig.getApiKey()
                         )
@@ -140,48 +102,7 @@ class NasaService {
             } catch (e: Exception) {
                 Log.e(ContentValues.TAG, "${e.message}")
             }
-
         }
-    }
 
-    public fun getLastPhotos(db:DayPhotoDao) {
-
-        var api = getApi()
-
-
-        if (api != null) {
-
-            var lastEndDay=nasaConfig.getLastDate()
-            var lastStartYYYY=lastEndDay.substring(0,4).toInt()
-            var lastStartMM=lastEndDay.substring(6,8).toInt()
-            var lastStartDD=lastEndDay.substring(9,11).toInt()
-            var lastStartDay = LocalDate.of(lastStartYYYY,lastStartMM,lastStartDD).minusDays(7).toString()
-            nasaConfig.setLastDate(lastStartDay)
-
-            Log.d(ContentValues.TAG, "Get old photos: from $lastEndDay - ${nasaConfig.getLastDate()}")
-
-            try {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val photos: List<DayPhoto> =
-                        api.getAPODS(
-                            nasaConfig.getLastDate(),
-                            lastEndDay,
-                            nasaConfig.getHd(),
-                            nasaConfig.getApiKey()
-                        )
-
-                    // to avoid duplicated insert
-                    photos.forEach {
-                        Log.d(ContentValues.TAG, it.explanation)
-                        var count = db.getPhotoOfThatDay(it.date)
-                        if (count == 0) db.insert(it)
-                    }
-
-                }
-            } catch (e: Exception) {
-                Log.e(ContentValues.TAG, "${e.message}")
-            }
-
-        }
     }
 }

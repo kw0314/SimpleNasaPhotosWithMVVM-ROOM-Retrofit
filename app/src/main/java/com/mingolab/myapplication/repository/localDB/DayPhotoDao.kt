@@ -1,11 +1,12 @@
 package com.mingolab.myapplication.repository.localDB
 
-import androidx.compose.runtime.MutableState
-import androidx.lifecycle.LiveData
+
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
+
 
 @Dao
 interface DayPhotoDao {
@@ -17,7 +18,7 @@ interface DayPhotoDao {
     fun insertAll(vararg photos:DayPhoto)
 
     @Query("SELECT * FROM photoTable " +
-            "ORDER BY photoTable.date DESC"
+            "ORDER BY photoTable.date ASC"
     )
     fun getAll(): List<DayPhoto>
 
@@ -30,7 +31,6 @@ interface DayPhotoDao {
             "ORDER BY photoTable.date ASC LIMIT 1"
     )
     fun getOldestPhoto(): DayPhoto
-
 
     @Query("SELECT count(*) FROM photoTable" +
             " WHERE photoTable.date=:date")

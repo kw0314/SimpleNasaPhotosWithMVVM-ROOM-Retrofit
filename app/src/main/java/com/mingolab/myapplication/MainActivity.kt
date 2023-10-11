@@ -19,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,9 +38,16 @@ import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private lateinit var lifecycleRegistry: LifecycleRegistry
+
     @SuppressLint("CoroutineCreationDuringComposition", "UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lifecycleRegistry = LifecycleRegistry(this)
+        lifecycleRegistry.markState(Lifecycle.State.CREATED)
+
         setContent {
             MyApplicationTheme {
                 Surface(
@@ -50,9 +59,6 @@ class MainActivity : ComponentActivity() {
                     val photoViewModel: PhotoViewModel = viewModel()
 
                     Scaffold(
-//                        topBar = {
-//                            TopAppBar(title = { Text(stringResource(R.string.app_name))  })
-//                        }
                     ) {
                         NavHost(
                             navController = navController,
@@ -70,6 +76,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }
 
 
