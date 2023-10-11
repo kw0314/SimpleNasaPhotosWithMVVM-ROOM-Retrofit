@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -109,15 +110,15 @@ class PhotoList {
                 }
             ) {
                 if (!isLoading) {
-                    val pList by photoViewModel.photoList.collectAsState()
+                    val pList = photoViewModel.photoList
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(0.dp, 80.dp, 0.dp, 0.dp)
                     ) {
-                        var pListSize = pList?.size ?: 0
+                        var pListSize = pList.value?.size ?: 0
                         items(pListSize) { index ->
                             photoCard(
-                                pList!![index], photoViewModel
+                                pList.value!![index], photoViewModel
                             )
                         }
                     }

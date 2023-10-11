@@ -67,9 +67,8 @@ class PhotoViewModel @Inject constructor(private val savedStateHandle: SavedStat
         _isLoading.value = false
     }
 
-    private val _photoList = MutableStateFlow(dbDao!!.getAll())
+    val photoList = dbDao!!.getAll()
 
-    val photoList: StateFlow<List<DayPhoto>> get() = _photoList
 
 
 //    var photoList = dbDao!!.getAll()

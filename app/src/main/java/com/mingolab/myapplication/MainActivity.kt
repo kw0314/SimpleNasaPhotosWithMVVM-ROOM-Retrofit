@@ -3,6 +3,7 @@ package com.mingolab.myapplication
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
 import android.os.Bundle
+import android.provider.ContactsContract.Contacts.Photo
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,10 +22,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.mingolab.myapplication.repository.localDB.DayPhoto
 import com.mingolab.myapplication.ui.theme.MyApplicationTheme
 import com.mingolab.myapplication.view.PhotoDetail
 import com.mingolab.myapplication.view.PhotoList
@@ -40,6 +44,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private lateinit var lifecycleRegistry: LifecycleRegistry
+    lateinit var photoViewModel: PhotoViewModel
 
     @SuppressLint("CoroutineCreationDuringComposition", "UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +52,9 @@ class MainActivity : ComponentActivity() {
 
         lifecycleRegistry = LifecycleRegistry(this)
         lifecycleRegistry.markState(Lifecycle.State.CREATED)
+
+
+
 
         setContent {
             MyApplicationTheme {
@@ -56,7 +64,12 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
                     val screenHandler = remember { ScreenHandler() }
-                    val photoViewModel: PhotoViewModel = viewModel()
+//                    val photoViewModel: PhotoViewModel = viewModel()
+
+                    photoViewModel = ViewModelProvider(this).get(PhotoViewModel::class.java)
+                    photoViewModel.photoList.observe(this, Observer<List<DayPhoto>>(){
+                        navController.navigate("PhotoList")
+                    })
 
                     Scaffold(
                     ) {
@@ -76,7 +89,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 }
 
 

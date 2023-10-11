@@ -1,6 +1,7 @@
 package com.mingolab.myapplication.repository.localDB
 
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -20,7 +21,7 @@ interface DayPhotoDao {
     @Query("SELECT * FROM photoTable " +
             "ORDER BY photoTable.date ASC"
     )
-    fun getAll(): List<DayPhoto>
+    fun getAll(): LiveData<List<DayPhoto>>
 
     @Query("SELECT * FROM photoTable " +
             "ORDER BY photoTable.date DESC LIMIT 1"
