@@ -19,7 +19,7 @@ interface DayPhotoDao {
     fun insertAll(vararg photos:DayPhoto)
 
     @Query("SELECT * FROM photoTable " +
-            "ORDER BY photoTable.date ASC"
+            "ORDER BY photoTable.date DESC"
     )
     fun getAll(): LiveData<List<DayPhoto>>
 

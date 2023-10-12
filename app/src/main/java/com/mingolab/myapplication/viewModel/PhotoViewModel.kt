@@ -71,9 +71,11 @@ class PhotoViewModel @Inject constructor(private val savedStateHandle: SavedStat
 
 
 
+
 //    var photoList = dbDao!!.getAll()
 
     var curPhoto= dbDao?.getLatestPhoto()
+    var curScrollPosition = 0
 
     fun setPhoto(photo: DayPhoto){
         curPhoto = photo

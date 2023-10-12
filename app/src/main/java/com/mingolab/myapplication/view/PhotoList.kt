@@ -1,6 +1,7 @@
 package com.mingolab.myapplication.view
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -14,14 +15,10 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,11 +27,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,23 +43,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
-import com.mingolab.myapplication.MyApplication
 import com.mingolab.myapplication.R
 import com.mingolab.myapplication.repository.localDB.DayPhoto
 import com.mingolab.myapplication.viewModel.PhotoViewModel
 import com.webtoonscorp.android.readmore.foundation.ReadMoreTextOverflow
 import com.webtoonscorp.android.readmore.material3.ReadMoreText
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-
+import kotlinx.coroutines.launch
 
 class PhotoList {
 
@@ -82,6 +72,7 @@ class PhotoList {
         this.navController = navController
         val isLoading by photoViewModel.isLoading.collectAsState()
         val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isLoading)
+        val listState = rememberLazyListState()
 
         Scaffold(
             topBar = {
@@ -98,7 +89,7 @@ class PhotoList {
             SwipeRefresh(
                 state = swipeRefreshState,
                 onRefresh = {
-                    photoViewModel.checkPastPhotos()
+                    photoViewModel.checkLastPhotos()
                 },
                 indicator = { state, refreshTrigger ->
                     SwipeRefreshIndicator(
@@ -111,15 +102,30 @@ class PhotoList {
             ) {
                 if (!isLoading) {
                     val pList = photoViewModel.photoList
+//                    val listState = rememberLazyListState()
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(0.dp, 80.dp, 0.dp, 0.dp)
                     ) {
-                        var pListSize = pList.value?.size ?: 0
-                        items(pListSize) { index ->
+                        var listSize =pList.value?.size ?: 0
+                        items(listSize) { index ->
                             photoCard(
-                                pList.value!![index], photoViewModel
+                                pList.value!![index], index, photoViewModel
                             )
+                        }
+                        item{
+                            Button(onClick = {
+                                photoViewModel.curScrollPosition=listSize
+                                photoViewModel.checkPastPhotos() },
+                                modifier = Modifier.fillMaxWidth(1f)
+                            ) {
+                                Text("get more images")
+                            }
+                        }
+                        CoroutineScope(Dispatchers.Main).launch {
+                            listState.scrollToItem(photoViewModel.curScrollPosition)
                         }
                     }
 
@@ -133,6 +139,7 @@ class PhotoList {
     @Composable
     fun photoCard(
         photo: DayPhoto,
+        index: Int,
         photoViewModel: PhotoViewModel
     ) {
 
@@ -167,6 +174,7 @@ class PhotoList {
                         .fillMaxWidth()
                         .clickable(onClick = {
                             photoViewModel.setPhoto(photo)
+                            photoViewModel.curScrollPosition=index
                             // set navigation
                             navController.navigate("PhotoDetail")
                         }),
